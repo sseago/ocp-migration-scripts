@@ -24,7 +24,7 @@ aws s3 cp s3://$S3_BUCKET/$BACKUP_FILE .
 tar xzvf $BACKUP_FILE
 
 oc login -u $OC_USER -p $OC_PASSWORD
-DOCKER_ENDPOINT=$(oc get service/docker-registry -n default -o jsonpath='{.spec.clusterIP}:{.spec.ports[0].port}')
+DOCKER_ENDPOINT=$(oc registry info)
 
 NAMESPACE=$(ls $BACKUP_LOCATION)
 oc create namespace $NAMESPACE||true
