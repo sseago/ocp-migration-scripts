@@ -11,9 +11,9 @@ export AWS_SHARED_CREDENTIALS_FILE=/.aws/credentials
 NAMESPACE=$1
 if [ -z "$2" ]
 then
-    BACKUP_FILE=poc-backup.tar.gz
+    BACKUP_NAME=poc-backup
 else
-    BACKUP_FILE=$2
+    BACKUP_NAME=$2
 fi
 
 BACKUP_MOUNTPOINT=/tmp
@@ -23,6 +23,9 @@ mkdir -p $BACKUP_LOCATION
 rm -rf  $BACKUP_LOCATION/*
 oc login -u $OC_USER -p $OC_PASSWORD
 oc project $NAMESPACE
+
+ark backup delete --confirm $BACKUP_NAME
+
 IMAGESTREAM_NAMES_STR=`oc get imagestreams -o jsonpath='{.items[*].metadata.name}'`
 IFS=' ' read -a IMAGESTREAM_NAMES <<< $IMAGESTREAM_NAMES_STR
 for IMAGESTREAM_NAME in "${IMAGESTREAM_NAMES[@]}"
@@ -42,5 +45,6 @@ do
   done
 done
 cd $BACKUP_MOUNTPOINT
-tar czvf $BACKUP_FILE  $BACKUP_DIR
-aws s3 cp ./$BACKUP_FILE s3://$S3_BUCKET
+tar czvf $BACKUP_NAME.tar.gz  $BACKUP_DIR
+aws s3 cp ./$BACKUP_NAME.tar.gz s3://$S3_BUCKET
+ark backup create $BACKUP_NAME -w --include-namespaces=$NAMESPACE --include-resources=service,deploymentconfig.apps.openshift.io,buildconfig.build.openshift.io,route.route.openshift.io

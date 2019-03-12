@@ -10,9 +10,9 @@ export AWS_SHARED_CREDENTIALS_FILE=/.aws/credentials
 
 if [ -z "$1" ]
 then
-    BACKUP_FILE=poc-backup.tar.gz
+    BACKUP_NAME=poc-backup
 else
-    BACKUP_FILE=$1
+    BACKUP_NAME=$1
 fi
 
 BACKUP_MOUNTPOINT=/tmp
@@ -20,8 +20,8 @@ BACKUP_DIR=poc-out
 BACKUP_LOCATION=$BACKUP_MOUNTPOINT/$BACKUP_DIR
 rm -rf  $BACKUP_LOCATION
 cd $BACKUP_MOUNTPOINT
-aws s3 cp s3://$S3_BUCKET/$BACKUP_FILE .
-tar xzvf $BACKUP_FILE
+aws s3 cp s3://$S3_BUCKET/$BACKUP_NAME.tar.gz .
+tar xzvf $BACKUP_NAME.tar.gz
 
 oc login -u $OC_USER -p $OC_PASSWORD
 DOCKER_ENDPOINT=$(oc registry info)
@@ -43,5 +43,4 @@ do
     skopeo copy --dest-creds=$OC_USER:$(oc whoami -t) --dest-tls-verify=false dir:$IMAGE_BACKUP docker://$DOCKER_REPOSITORY
   done
 done
-
-
+ark restore create -w --from-backup $BACKUP_NAME
