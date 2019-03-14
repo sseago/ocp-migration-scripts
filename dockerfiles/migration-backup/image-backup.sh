@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# image-backup.sh MIGRATION_REGISTRY NAMESPACE [BACKUP_NAME]
 set -x
 sleep 3
 
@@ -8,12 +8,13 @@ export AWS_SHARED_CREDENTIALS_FILE=/.aws/credentials
 # defines OC_USER, OC_PASSWORD, S3_BUCKET
 . /migration-env.sh
 
-NAMESPACE=$1
-if [ -z "$2" ]
+MIGRATION_REGISTRY=$1
+NAMESPACE=$2
+if [ -z "$3" ]
 then
     BACKUP_NAME=poc-backup
 else
-    BACKUP_NAME=$2
+    BACKUP_NAME=$3
 fi
 
 BACKUP_MOUNTPOINT=/tmp
@@ -36,12 +37,13 @@ do
   do
     IFS=',' read -a ITEMS <<< $i
     TAG=${ITEMS[0]}
-    DOCKER_REF=${ITEMS[1]}
+    SRC_DOCKER_REF=${ITEMS[1]}
     OC_IMAGE_NAME=${ITEMS[2]}
+    DEST_DOCKER_REF=$MIGRATION_REGISTRY/$NAMESPACE/$IMAGESTREAM_NAME:$TAG
 
     NS_BACKUP_PATH=$BACKUP_LOCATION/$NAMESPACE/$IMAGESTREAM_NAME/$TAG/$OC_IMAGE_NAME
     mkdir -p $NS_BACKUP_PATH
-    skopeo copy --src-creds=$OC_USER:$(oc whoami -t) --src-tls-verify=false docker://$DOCKER_REF dir:$NS_BACKUP_PATH
+    skopeo copy --src-creds=$OC_USER:$(oc whoami -t) --src-tls-verify=false --dest-tls-verify=false docker://$SRC_DOCKER_REF docker://$DEST_DOCKER_REF
   done
 done
 cd $BACKUP_MOUNTPOINT

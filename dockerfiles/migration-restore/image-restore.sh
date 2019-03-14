@@ -1,4 +1,5 @@
 #!/bin/bash
+# image-backup.sh MIGRATION_REGISTRY MIGRATION_REGISTRY [BACKUP_NAME]
 
 set -x
 sleep 3
@@ -8,11 +9,12 @@ export AWS_SHARED_CREDENTIALS_FILE=/.aws/credentials
 # defines OC_USER, OC_PASSWORD, S3_BUCKET
 . /migration-env.sh
 
-if [ -z "$1" ]
+MIGRATION_REGISTRY=$1
+if [ -z "$2" ]
 then
     BACKUP_NAME=poc-backup
 else
-    BACKUP_NAME=$1
+    BACKUP_NAME=$2
 fi
 
 BACKUP_MOUNTPOINT=/tmp
@@ -37,10 +39,10 @@ do
     TAG=${this_tag##*/}
     OC_IMAGE_NAME=$(ls $BACKUP_LOCATION/$NAMESPACE/$IMAGESTREAM_NAME/$TAG)
 
-    IMAGE_BACKUP=$BACKUP_LOCATION/$NAMESPACE/$IMAGESTREAM_NAME/$TAG/$OC_IMAGE_NAME
-    DOCKER_REPOSITORY=$DOCKER_ENDPOINT/$NAMESPACE/$IMAGESTREAM_NAME:$TAG
+    SRC_DOCKER_REF=$MIGRATION_REGISTRY/$NAMESPACE/$IMAGESTREAM_NAME@$OC_IMAGE_NAME
+    DEST_DOCKER_REF=$DOCKER_ENDPOINT/$NAMESPACE/$IMAGESTREAM_NAME:$TAG
 
-    skopeo copy --dest-creds=$OC_USER:$(oc whoami -t) --dest-tls-verify=false dir:$IMAGE_BACKUP docker://$DOCKER_REPOSITORY
+    skopeo copy --dest-creds=$OC_USER:$(oc whoami -t) --dest-tls-verify=false --src-tls-verify=false docker://$SRC_DOCKER_REF docker://$DEST_DOCKER_REF
   done
 done
 ark restore create -w --from-backup $BACKUP_NAME
